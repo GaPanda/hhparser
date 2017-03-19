@@ -40,7 +40,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="$(if [ "$OSTYPE" "==" "cygwin" ]; then cygpath -u 'C:\Users\pingv\Documents\GitHub\headhunter_parse'; else echo '/C/Users/pingv/Documents/GitHub/headhunter_parse'; fi;)"
+VIRTUAL_ENV="$(if [ "$OSTYPE" "==" "cygwin" ]; then cygpath -u 'C:\Users\pingv\Documents\GitHub\hhparser'; else echo '/C/Users/pingv/Documents/GitHub/hhparser'; fi;)"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

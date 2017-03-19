@@ -3,6 +3,7 @@ import urllib.parse
 import re
 import sys
 from bs4 import BeautifulSoup
+import hh_mssql
 
 URL = "https://spb.hh.ru"
 
@@ -32,14 +33,30 @@ class Vacancy:
             'div', class_="companyname").get_text()
         self.vacancy_salary = soup.find('td', class_="l-content-colum-1 b-v-info-content").find(
             'div', class_="l-paddings").get_text()
+
+        try:
+            self.vacancy_salary = soup.find('td', class_="l-content-colum-1 b-v-info-content").find(
+            'meta', itemprop = "baseSalary").get('content')
+            self.currency = soup.find('td', class_="l-content-colum-1 b-v-info-content").find(
+            'meta', itemprop = "salaryCurrency").get('content')
+        except:
+            self.vacancy_salary = "Отсутствует"
+            self.currency = "Отсутствует" 
+        try:
+            self.vacancy_date = soup.find('time', class_="vacancy-sidebar__publication-date").get('datetime')[:10]
+        except:
+            self.vacancy_date = "Отсутствует"
+
         self.vacancy_city = soup.find('td', class_="l-content-colum-2 b-v-info-content").find(
+            'div', class_="l-paddings").get_text()
+        self.vacancy_experience = soup.find('td', class_="l-content-colum-3 b-v-info-content").find(
             'div', class_="l-paddings").get_text()
         self.vacancy_description = soup.find(
             'div', class_="b-vacancy-desc-wrapper")
 
     def description_parse(self):
         requirments = ['Требования:', 'Требования к кандидату:',
-                       'Требования', 'Требования к кандидату']
+                       'Требования', 'Требования к кандидату', 'Что для нас важно:']
         conditions = ['Условия:', 'Условия', 'Условия, которые мы предлагаем:',
                       'Условия, которые мы предлагаем', 'От нас:', 'От нас',
                       'Мы предлагаем:', 'Мы предлагаем']
@@ -47,18 +64,19 @@ class Vacancy:
                         'Задачи:', 'Ожидания', 'Обязанности', 'Задачи',
                         'Основные задачи', 'Основные задачи:',
                         'Ваши ежедневные задачи', 'Ваши ежедневные задачи:',
-                        'Ключевые задачи:', 'Ключевые задачи']
+                        'Ключевые задачи:', 'Ключевые задачи', 'Задачи для тебя:',
+                        'Основными задачами для Вас станет:']
         tag_text = self.vacancy_description.find_all(['strong', 'ul'])
         i = 0
         for key in tag_text:
             # print(key.get_text())
-            if key.get_text() in requirments:
+            if key.get_text().strip() in requirments:
                 self.requirments_list = self.tag_text_analyze(tag_text, i + 1)
                 i += 1
-            elif key.get_text() in conditions:
+            elif key.get_text().strip()  in conditions:
                 self.conditions_list = self.tag_text_analyze(tag_text, i + 1)
                 i += 1
-            elif key.get_text() in expectations:
+            elif key.get_text().strip()  in expectations:
                 self.expectations_list = self.tag_text_analyze(tag_text, i + 1)
                 i += 1
             else:
@@ -89,6 +107,7 @@ class Vacancy:
 
     def print_result(self):
         print('Должность: ', self.vacancy_name,
+              '\nДата публикации: ', self.vacancy_date,
               '\nИмя компании: ', self.vacancy_company,
               '\nЗарплата: ', self.vacancy_salary,
               '\nГород: ', self.vacancy_city,
@@ -109,7 +128,7 @@ class SearchQuery:
 
     def __init__(self, search_text):
         self.vacancy_list = []
-        self.search_text = search_text
+        self.search_text = search_text.strip()
         self.page_number = 0
         self.cur_vac_num = 0
         self.sum_vac = 0
@@ -127,10 +146,9 @@ class SearchQuery:
         return self.sum_vac
 
     def start_search(self):
-        search_text_string = self.search_text.strip()
         search_url = URL + "/search/vacancy?clusters=true&area=2&" + \
             "enable_snippets=true&text={0}".format(
-                urllib.parse.quote_plus(search_text_string))
+                urllib.parse.quote_plus(self.search_text))
         count_pages = self.count_pages(search_url)
         print(count_pages)
         if count_pages is None:
@@ -139,7 +157,7 @@ class SearchQuery:
             for i in range(0, count_pages):
                 search_url = URL + "/search/vacancy?clusters=true&area=2" + \
                     "&enable_snippets=true&text={0}&page={1}".format(
-                        urllib.parse.quote_plus(search_text_string), str(i))
+                        urllib.parse.quote_plus(self.search_text), str(i))
                 self.search_on_page(search_url)
 
     def search_on_page(self, search_url):
@@ -149,7 +167,8 @@ class SearchQuery:
             'div', class_="search-result").find_all('div', class_="search-result-item__head")
         for key in vacancy:
             temp = key.find('a')
-            vacancy_url = temp.get('href')
+            temp1 = temp.get('href').split('?')
+            vacancy_url = temp1[0]
             new_vacancy = Vacancy(vacancy_url)
             self.vacancy_list.append(new_vacancy)
 
@@ -184,11 +203,17 @@ class SearchQuery:
             key.print_result()
             i += 1
 
+    def insert_into_db(self, server_name, db_name):
+        conn = MSSQLConnection(server_name, db_name)
+        conn.insert_name_query(self.search_text)
+
     def exit(self):
         sys.exit(0)
 
 
 def main():
+    server_name = 'DESKTOP\SQLEXPRESS'
+    db_name = 'hh'
     search_text = input('Поисковый запрос: ')
     my_query = SearchQuery(search_text)
     my_query.start_search()
