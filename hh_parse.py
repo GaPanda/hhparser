@@ -13,10 +13,8 @@ def get_html(url):
     page = urllib.request.urlopen(url)
     return page.read()
 
-
 class Vacancy:
     '''Класс описывающий вакансию'''
-
     def __init__(self, url):
         self.vacancy_url = url
         self.requirments_list = []
@@ -40,15 +38,21 @@ class Vacancy:
             self.currency = soup.find('td', class_="l-content-colum-1 b-v-info-content").find(
             'meta', itemprop = "salaryCurrency").get('content')
         except:
-            self.vacancy_salary = "Отсутствует"
-            self.currency = "Отсутствует" 
+            self.vacancy_salary = "NULL"
+            self.currency = "NULL" 
         try:
             self.vacancy_date = soup.find('time', class_="vacancy-sidebar__publication-date").get('datetime')[:10]
         except:
-            self.vacancy_date = "Отсутствует"
+            self.vacancy_date = "NULL"
 
-        self.vacancy_city = soup.find('td', class_="l-content-colum-2 b-v-info-content").find(
-            'div', class_="l-paddings").get_text()
+        vacancy_city_temp = soup.find('td', class_="l-content-colum-2 b-v-info-content").find(
+            'div', class_="l-paddings").get_text().split(',')
+        self.vacancy_city = vacancy_city_temp[0].strip()
+        try:
+            self.vacancy_metro = vacancy_city_temp[1]
+        except:
+            self.vacancy_metro = "NULL"
+
         self.vacancy_experience = soup.find('td', class_="l-content-colum-3 b-v-info-content").find(
             'div', class_="l-paddings").get_text()
         self.vacancy_description = soup.find(
@@ -107,20 +111,33 @@ class Vacancy:
 
     def print_result(self):
         print('Должность: ', self.vacancy_name,
+              '\nURL: ', self.vacancy_url,
               '\nДата публикации: ', self.vacancy_date,
               '\nИмя компании: ', self.vacancy_company,
-              '\nЗарплата: ', self.vacancy_salary,
+              '\nЗарплата: ', self.vacancy_salary, self.currency,
+              '\nОпыт: ', self.vacancy_experience,
               '\nГород: ', self.vacancy_city,
-              '\nURL: ', self.vacancy_url)
-        print('Требования:')
-        for key in self.requirments_list:
-            print('-', key)
-        print('Ожидания:')
-        for key in self.expectations_list:
-            print('-', key)
-        print('Условия:')
-        for key in self.conditions_list:
-            print('-', key)
+              '\nСтация метро: ', self.vacancy_metro
+              )
+        if self.requirments_list:
+            print('Требования:')
+            for key in self.requirments_list:
+                print('-', key)
+        else:
+            print('Требований не найдено!')
+        if self.expectations_list:
+            print('Ожидания:')
+            for key in self.expectations_list:
+                print('-', key)
+        else:
+            print('Ожиданий не найдено!')        
+        if self.conditions_list:
+            print('Условия:')
+            for key in self.conditions_list:
+                print('-', key)
+        else:
+            print('Условий не найдено!')
+        print('----------------------------------------------')
 
 
 class SearchQuery:
@@ -150,7 +167,6 @@ class SearchQuery:
             "enable_snippets=true&text={0}".format(
                 urllib.parse.quote_plus(self.search_text))
         count_pages = self.count_pages(search_url)
-        print(count_pages)
         if count_pages is None:
             print('Записей не найдено!')
         else:
@@ -204,12 +220,11 @@ class SearchQuery:
             i += 1
 
     def insert_into_db(self, server_name, db_name):
-        conn = MSSQLConnection(server_name, db_name)
+        conn = hh_mssql.MSSQLConnection(server_name, db_name)
         conn.insert_name_query(self.search_text)
 
     def exit(self):
         sys.exit(0)
-
 
 def main():
     server_name = 'DESKTOP\SQLEXPRESS'
@@ -218,6 +233,7 @@ def main():
     my_query = SearchQuery(search_text)
     my_query.start_search()
     my_query.full_vacancy_information()
+    #my_query.insert_into_db(server_name, db_name)
 
 if __name__ == '__main__':
     main()
