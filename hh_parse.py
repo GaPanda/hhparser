@@ -233,42 +233,51 @@ class SearchQuery:
         start = time.time()
         i = 0
         conn = hh_mssql.MSSQLConnection(server_name, db_name)
+        id_vacancy = 0
         id_query = conn.insert_query(self.search_text, self.search_time)
         for key in self.vacancy_list:
-            print('Добавлена вакансия под номером ', i)
-            id_vacancy = conn.insert_vacancy(key.vacancy_name, key.vacancy_company, key.vacancy_salary, 
-            key.currency, key.vacancy_city, key.vacancy_metro, key.vacancy_experience,
-            key.vacancy_date, key.vacancy_url)
-            for c_key in key.conditions_list:
-                id_con = conn.insert_text_condition(self.format_string(c_key))
-                conn.insert_vac_con(id_vacancy, id_con)
-            for e_key in key.expectations_list:
-                id_exp = conn.insert_text_expectation(self.format_string(e_key))
-                conn.insert_vac_exp(id_vacancy, id_exp)
-            for r_key in key.requirments_list:
-                id_req = conn.insert_text_requerments(self.format_string(r_key))
-                conn.insert_vac_req(id_vacancy, id_req)
-            conn.insert_query_vacancy(id_vacancy, id_query)
+            try:    
+                id_vacancy = conn.insert_vacancy(key.vacancy_name, key.vacancy_company, key.vacancy_salary, 
+                key.currency, key.vacancy_city, key.vacancy_metro, key.vacancy_experience,
+                key.vacancy_date, key.vacancy_url)
+                for c_key in key.conditions_list:
+                    id_con = conn.insert_text_condition(self.format_string(c_key))
+                    conn.insert_vac_con(id_vacancy, id_con)
+                for e_key in key.expectations_list:
+                    id_exp = conn.insert_text_expectation(self.format_string(e_key))
+                    conn.insert_vac_exp(id_vacancy, id_exp)
+                for r_key in key.requirments_list:
+                    id_req = conn.insert_text_requerments(self.format_string(r_key))
+                    conn.insert_vac_req(id_vacancy, id_req)
+                conn.insert_query_vacancy(id_vacancy, id_query)
+                print('Добавлена вакансия под номером ', i)
+            except:
+                print('Не удалось добавить вакансию под номером ', i)
+                conn.delete_after_error(id_vacancy)
+            
             i += 1
         finish = time.time() - start
-        print('Добавление вакансий в базу длилось ', finish/60, ' минут.')  
+        print('Добавление вакансий в базу длилось ', finish, ' секунд.')  
 
     def end_of_search(self):
 	    self.search_time = time.time() - self.search_time_start
-	    print('Поиск и обработка вакансий длились ', self.search_time/60, ' минут.')        
+	    print('Поиск и обработка вакансий длились ', self.search_time, ' секунд.')        
 
     def exit(self):
         sys.exit(0)
 
 def main():
+    #Server name
     server_name = 'DESKTOP\SQLEXPRESS'
+    #Database name
     db_name = 'hh'
+    #SearchQuery
     search_text = input('Поисковый запрос: ')
-    my_query = SearchQuery(search_text)
-    my_query.start_search()
-    my_query.end_of_search()
-    my_query.full_vacancy_information()
-    my_query.insert_into_db(server_name, db_name)
+    Query = SearchQuery(search_text)
+    Query.start_search()
+    Query.full_vacancy_information()
+    Query.end_of_search()
+    Query.insert_into_db(server_name, db_name)
 
 if __name__ == '__main__':
     main()

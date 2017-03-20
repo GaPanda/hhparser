@@ -11,8 +11,6 @@ class MSSQLConnection:
         try:
             cursor.execute("insert into " + table_info[0] + "(" + table_info[2] + ") values ('" + value + "')")
             conn.commit()
-        except:
-            print('Не удалось добавить в БД!')
         finally:
             cursor.execute("select " + table_info[1] + " from " + table_info[0] + " where " + table_info[2] + " = '" + value + "'")
             row = cursor.fetchone()
@@ -31,9 +29,7 @@ class MSSQLConnection:
                 cursor.execute("insert into " + table_info[0] + "("\
                 + table_info[2] + ", " + table_info[3] + ") values ("\
                 + id_1_str + "," + id_2_str + ")")
-                conn.commit()        
-        except:
-            print('Не удалось добавить в БД!')
+                conn.commit()
         finally:
             cursor.execute("select " + table_info[1] + " from " + table_info[0] + " where " + table_info[2] + "=" + id_1_str + " and " + table_info[3] + "=" + id_2_str)
             row = cursor.fetchone()
@@ -125,8 +121,6 @@ class MSSQLConnection:
         try:
             cursor.execute("insert into Query (id_query_name, time_query, time_analyze_query) values ("+ id_query_name.__str__() + ", GETDATE()," + search_time.__str__() +")")
             conn.commit()
-        except:
-            print('Не удалось добавить в БД!')
         finally:
             cursor.execute("SELECT @@IDENTITY")
             row = cursor.fetchone()
@@ -157,10 +151,22 @@ class MSSQLConnection:
                 + "," + id_salary.__str__() + "," + id_experience.__str__() + "," + id_location.__str__()\
                 +"," + date_vacancy + ",'" + url_vacancy +"')")
             conn.commit()
-        except:
-            print('Не удалось добавить в БД!')
         finally:
             cursor.execute("select id_vacancy from Vacancy where url_vacancy = '" + url_vacancy + "'")
             row = cursor.fetchone()
             conn.close()
             return row[0]
+
+    def delete_after_error(self, id_vacancy):
+        id_v = id_vacancy.__str__()
+        conn = pyodbc.connect(self.connection_string)
+        cursor = conn.cursor()
+        try:
+            cursor.execute("delete from Vac_con where id_vacancy=" + id_v)
+            cursor.execute("delete from Vac_exp where id_vacancy=" + id_v)
+            cursor.execute("delete from Vac_req where id_vacancy=" + id_v)
+            cursor.execute("delete from Query_vacancy where id_vacancy=" + id_v)
+            cursor.execute("delete from Vacancy where id_vacancy=" + id_v)
+            conn.commit()
+        finally:
+            conn.close()
