@@ -74,7 +74,6 @@ class Vacancy:
         tag_text = self.vacancy_description.find_all(['strong', 'ul'])
         i = 0
         for key in tag_text:
-            # print(key.get_text())
             if key.get_text().strip() in requirments:
                 self.requirments_list = self.tag_text_analyze(tag_text, i + 1)
                 i += 1
@@ -143,7 +142,6 @@ class Vacancy:
 
 class SearchQuery:
     '''Класс поискового запроса'''
-
     def __init__(self, search_text):
         self.vacancy_list = []
         self.search_text = search_text.strip()
@@ -209,75 +207,79 @@ class SearchQuery:
         else:
             sum_pages = int(int(temp) // 20)
         if sum_pages != None:
+            self.sum_vacancies(int(temp))
             return sum_pages
         else:
             return 0
     
-    def full_vacancy_information(self):
+    def get_vacancy_information(self):
         i = 1
         for key in self.vacancy_list:
+            self.current_vacancy_number(i)
             key.search_on_page()
             key.description_parse()
-            print('Вакансия: ', i)
-            key.print_result()
+            self.progress_bar()
+            #print('Вакансия: ', i)
+            #key.print_result()
             i += 1
     
+    def progress_bar(self):
+        prog = int((self.cur_vac_num / self.sum_vac)*100)
+        print('Обработка данных выполнена на {0}%\r'.format(prog), end='')
+
     def format_string(self, string):
         temp = string.split("'")
         temp2 = ''
         for key in temp:
             temp2 += key
         return temp2
+    
+    def db_add_qustion(self):
+        while True:
+            q_text = input('Хотите добавить в базу данных?(y/n): \r')
+            if q_text == 'y':
+                return 1
+            elif q_text == 'n':
+                return 0
+            else:
+                'Неправильный ввод!'
 
     def insert_into_db(self, server_name, db_name):
-        start = time.time()
-        i = 0
-        conn = hh_mssql.MSSQLConnection(server_name, db_name)
-        id_vacancy = 0
-        id_query = conn.insert_query(self.search_text, self.search_time)
-        for key in self.vacancy_list:
-            try:    
-                id_vacancy = conn.insert_vacancy(key.vacancy_name, key.vacancy_company, key.vacancy_salary, 
-                key.currency, key.vacancy_city, key.vacancy_metro, key.vacancy_experience,
-                key.vacancy_date, key.vacancy_url)
-                for c_key in key.conditions_list:
-                    id_con = conn.insert_text_condition(self.format_string(c_key))
-                    conn.insert_vac_con(id_vacancy, id_con)
-                for e_key in key.expectations_list:
-                    id_exp = conn.insert_text_expectation(self.format_string(e_key))
-                    conn.insert_vac_exp(id_vacancy, id_exp)
-                for r_key in key.requirments_list:
-                    id_req = conn.insert_text_requerments(self.format_string(r_key))
-                    conn.insert_vac_req(id_vacancy, id_req)
-                conn.insert_query_vacancy(id_vacancy, id_query)
-                print('Добавлена вакансия под номером ', i)
-            except:
-                print('Не удалось добавить вакансию под номером ', i)
-                conn.delete_after_error(id_vacancy)
-            
-            i += 1
-        finish = time.time() - start
-        print('Добавление вакансий в базу длилось ', finish, ' секунд.')  
+        if self.vacancy_list:
+            ans = self.db_add_qustion()
+            if ans == 1:
+                start = time.time()
+                i = 0
+                conn = hh_mssql.MSSQLConnection(server_name, db_name)
+                print('\nДобавление в БД...')
+                id_vacancy = 0
+                id_query = conn.insert_query(self.search_text, self.search_time)
+                for key in self.vacancy_list:
+                    try:    
+                        id_vacancy = conn.insert_vacancy(key.vacancy_name, key.vacancy_company, key.vacancy_salary, 
+                        key.currency, key.vacancy_city, key.vacancy_metro, key.vacancy_experience,
+                        key.vacancy_date, key.vacancy_url)
+                        for c_key in key.conditions_list:
+                            id_con = conn.insert_text_condition(self.format_string(c_key))
+                            conn.insert_vac_con(id_vacancy, id_con)
+                        for e_key in key.expectations_list:
+                            id_exp = conn.insert_text_expectation(self.format_string(e_key))
+                            conn.insert_vac_exp(id_vacancy, id_exp)
+                        for r_key in key.requirments_list:
+                            id_req = conn.insert_text_requerments(self.format_string(r_key))
+                            conn.insert_vac_req(id_vacancy, id_req)
+                        conn.insert_query_vacancy(id_vacancy, id_query)
+                    except:
+                        conn.delete_after_error(id_vacancy)
+                    i += 1
+                finish = time.time() - start
+                print('\nДобавление вакансий в базу длилось ', finish, ' секунд.')
+            elif ans == 0:
+                print('\nОперация добавления отменена!')
+            else:
+                print('Ошибка!')
 
     def end_of_search(self):
-	    self.search_time = time.time() - self.search_time_start
-	    print('Поиск и обработка вакансий длились ', self.search_time, ' секунд.')        
-
-    def exit(self):
-        sys.exit(0)
-
-def main():
-    #Server name
-    server_name = 'DESKTOP\SQLEXPRESS'
-    #Database name
-    db_name = 'hh'
-    #SearchQuery
-    search_text = input('Поисковый запрос: ')
-    Query = SearchQuery(search_text)
-    Query.start_search()
-    Query.full_vacancy_information()
-    Query.end_of_search()
-    Query.insert_into_db(server_name, db_name)
-
-if __name__ == '__main__':
-    main()
+        if self.vacancy_list:
+            self.search_time = time.time() - self.search_time_start
+            print('Поиск и обработка вакансий длились ', self.search_time, ' секунд.')
