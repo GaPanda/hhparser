@@ -1,16 +1,16 @@
 import urllib.request
 import urllib.parse
-import re
-import sys
-import time
+import re, sys, time
 from bs4 import BeautifulSoup
 import hh_mssql
 
 URL = "https://spb.hh.ru"
-
+TIMEOUT = 0
 
 def get_html(url):
     '''Получение кода страницы'''
+    #Timeout при запросе
+    time.sleep(TIMEOUT)
     page = urllib.request.urlopen(url)
     return page.read()
 
@@ -236,7 +236,7 @@ class SearchQuery:
     
     def db_add_qustion(self):
         while True:
-            q_text = input('Хотите добавить в базу данных?(y/n): \r')
+            q_text = input('Хотите добавить в базу данных?(y/n): ')
             if q_text == 'y':
                 return 1
             elif q_text == 'n':

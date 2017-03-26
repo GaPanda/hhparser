@@ -1,32 +1,31 @@
 import hh_parse
 import os,sys
+import hh_config
 
-class data:
-    def __init__(self):
-        pass
-        
 def menu():
-    print('\nПрограмма для парсинга сайта https:\hh.ru')
+    print('\nhhparser v0.1. Программа для парсинга сайта https:\hh.ru')
     print('\n-----------------------------------------')
     print('1. Поисковый запрос')
     print('2. Конфигурация программы')
     print('3. Выход')
     print('-----------------------------------------\n')
 
-def input_cmd():
+def main():
+    config = hh_config.data()
+    config.load_from_conf()
     while True:
         menu()
         cmd = input('Введите команду: ')
         if cmd == '1':
-            start_query()
+            start_query(config)
         elif cmd == '2':
-            pass
+            configuration(config)
         elif cmd == '3':
             exit()
         else:
             print('Неверная команда, попробуйте еще раз!\n')
 
-def start_query():
+def start_query(config):
     #Server name
     server_name = 'DESKTOP\SQLEXPRESS'
     #Database name
@@ -39,14 +38,20 @@ def start_query():
     Query.end_of_search()
     Query.insert_into_db(server_name, db_name)
 
+def configuration(config):
+    #Information about config.ini
+    print('Имя сервера: ', config.rserver_name())
+    print('Имя базы данных: ', config.rdb_name())
+    print('Тайм-аут между запросами: ', config.rtimeout())
+    print(config.rrequirments())
+    print(config.rconditions())
+    print(config.rexpectations())
+
 def cls():
     os.system('cls')
 
 def exit():
-    sys.exit(0)
-
-def main():
-    input_cmd()
+    sys.exit()
 
 if __name__ == '__main__':
     main()
