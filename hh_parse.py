@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import urllib.request
 import urllib.parse
 import re, sys, time
@@ -59,28 +61,20 @@ class Vacancy:
         self.vacancy_description = soup.find(
             'div', class_="b-vacancy-desc-wrapper")
 
-    def description_parse(self):
-        requirments = ['Требования:', 'Требования к кандидату:',
-                       'Требования', 'Требования к кандидату', 'Что для нас важно:']
-        conditions = ['Условия:', 'Условия', 'Условия, которые мы предлагаем:',
-                      'Условия, которые мы предлагаем', 'От нас:', 'От нас',
-                      'Мы предлагаем:', 'Мы предлагаем']
-        expectations = ['Ожидания:', 'Обязанности:',
-                        'Задачи:', 'Ожидания', 'Обязанности', 'Задачи',
-                        'Основные задачи', 'Основные задачи:',
-                        'Ваши ежедневные задачи', 'Ваши ежедневные задачи:',
-                        'Ключевые задачи:', 'Ключевые задачи', 'Задачи для тебя:',
-                        'Основными задачами для Вас станет:']
+    def description_parse(self, requirments, conditions, expectations):
+        requirments_list = requirments
+        conditions_list = conditions
+        expectations_list = expectations
         tag_text = self.vacancy_description.find_all(['strong', 'ul'])
         i = 0
         for key in tag_text:
-            if key.get_text().strip() in requirments:
+            if key.get_text().strip() in requirments_list:
                 self.requirments_list = self.tag_text_analyze(tag_text, i + 1)
                 i += 1
-            elif key.get_text().strip()  in conditions:
+            elif key.get_text().strip() in conditions_list:
                 self.conditions_list = self.tag_text_analyze(tag_text, i + 1)
                 i += 1
-            elif key.get_text().strip()  in expectations:
+            elif key.get_text().strip() in expectations_list:
                 self.expectations_list = self.tag_text_analyze(tag_text, i + 1)
                 i += 1
             else:
@@ -212,12 +206,12 @@ class SearchQuery:
         else:
             return 0
     
-    def get_vacancy_information(self):
+    def get_vacancy_information(self, requirments, conditions, expectations):
         i = 1
         for key in self.vacancy_list:
             self.current_vacancy_number(i)
             key.search_on_page()
-            key.description_parse()
+            key.description_parse(requirments, conditions, expectations)
             self.progress_bar()
             #print('Вакансия: ', i)
             #key.print_result()
