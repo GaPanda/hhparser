@@ -2,9 +2,9 @@
 
 import urllib.request
 import urllib.parse
-import re, sys, time
+import os, time
 from bs4 import BeautifulSoup
-import hh_mssql
+import libs.hh_mssql as hh_mssql
 
 URL = "https://spb.hh.ru"
 TIMEOUT = 0
@@ -163,7 +163,8 @@ class SearchQuery:
                 urllib.parse.quote_plus(self.search_text))
         count_pages = self.count_pages(search_url)
         if count_pages is None:
-            print('Записей не найдено!')
+            os.system('cls')
+            print(u'\nЗаписей записей по запросу "' + self.search_text + '" не найдено!')
         else:
             for i in range(0, count_pages):
                 search_url = URL + "/search/vacancy?clusters=true&area=2" + \
@@ -236,15 +237,16 @@ class SearchQuery:
             elif q_text == 'n':
                 return 0
             else:
-                'Неправильный ввод!'
+                'Неправильный ввод!'  
 
     def insert_into_db(self, server_name, db_name):
-        if self.vacancy_list:
+        conn = hh_mssql.MSSQLConnection(server_name, db_name)
+        conn_result = conn.check_connection()
+        if (self.vacancy_list != []) & (conn_result == 1):
             ans = self.db_add_qustion()
             if ans == 1:
                 start = time.time()
                 i = 0
-                conn = hh_mssql.MSSQLConnection(server_name, db_name)
                 print('\nДобавление в БД...')
                 id_vacancy = 0
                 id_query = conn.insert_query(self.search_text, self.search_time)
@@ -267,13 +269,18 @@ class SearchQuery:
                         conn.delete_after_error(id_vacancy)
                     i += 1
                 finish = time.time() - start
-                print('\nДобавление вакансий в базу длилось ', finish, ' секунд.')
+                print(u'\nДобавление вакансий в базу длилось ', finish, ' секунд.')
+                os.system("pause")
+                os.system('cls')
             elif ans == 0:
-                print('\nОперация добавления отменена!')
+                print(u'\nОперация добавления отменена!')
             else:
-                print('Ошибка!')
+                print(u'Ошибка!')
+        elif (self.vacancy_list != []) & (conn_result == 0):
+            os.system('cls')
+            print(u'\nСоединение с базой не установлено!')
 
     def end_of_search(self):
         if self.vacancy_list:
             self.search_time = time.time() - self.search_time_start
-            print('Поиск и обработка вакансий длились ', self.search_time, ' секунд.')
+            print(u'\nПоиск и обработка вакансий длились ', self.search_time, ' секунд.')

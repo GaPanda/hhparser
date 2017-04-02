@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import hh_parse
+import libs.hh_parse as hh_parse
 import os,sys
-import hh_config
+import libs.hh_config as hh_config
 
 def menu():
     print(u'\nhhparser v0.1. Программа для парсинга сайта https:\hh.ru')
@@ -37,8 +37,11 @@ def start_query(config):
     Query.insert_into_db(config.rserver_name(), config.rdb_name())
 
 def configuration(config):
+    cls()
     #Information about config.ini
-    print(u'Имя сервера: ', config.rserver_name())
+    print(u'\nКонфигурационный файл config.ini.')
+    print(u'\n-----------------------------------------')
+    print(u'\nИмя сервера: ', config.rserver_name())
     print(u'Имя базы данных: ', config.rdb_name())
     print(u'Тайм-аут между запросами: ', config.rtimeout())
     print(u'Требования:')
@@ -47,6 +50,7 @@ def configuration(config):
     print(config.rconditions())
     print(u'Ожидания:')
     print(config.rexpectations())
+    print(u'\n-----------------------------------------')
 
 def cls():
     os.system('cls')

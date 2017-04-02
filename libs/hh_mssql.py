@@ -4,6 +4,14 @@ class MSSQLConnection:
     def __init__(self, server_name, db_name):
         self.connection_string = 'DRIVER={SQL Server};SERVER=' + server_name + ';DATABASE=' + db_name + ';'
 
+    def check_connection(self):
+        try:
+            conn = pyodbc.connect(self.connection_string)
+            conn.close()
+            return 1
+        except:
+            return 0
+        
     def insert_unique_value(self, value_in, table_info):
         conn = pyodbc.connect(self.connection_string)
         cursor = conn.cursor()

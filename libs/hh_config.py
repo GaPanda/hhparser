@@ -11,7 +11,7 @@ class data:
     def load_from_conf(self):
         cfg = {}
         try:
-            exec(open("config.ini", "r", encoding="utf-8").read(), cfg)
+            exec(open(".\config\config.ini", "r", encoding="utf-8").read(), cfg)
             self.db_name = cfg['db_name']
             self.server_name = cfg['server_name']
             self.timeout = cfg['timeout']
