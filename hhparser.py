@@ -5,7 +5,7 @@ import os,sys
 import libs.hh_config as hh_config
 
 def menu():
-    print(u'\nhhparser v0.1. Программа для парсинга сайта https:\hh.ru')
+    print(u'\nhhparser v1.0. Программа для парсинга сайта https:\hh.ru.')
     print(u'\n-----------------------------------------')
     print(u'1. Поисковый запрос')
     print(u'2. Конфигурация программы')

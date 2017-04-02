@@ -1,2 +1,2 @@
 @echo off
-cmd /k "python main.py"
+cmd /k "python hh_parser.py"
