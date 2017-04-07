@@ -2,7 +2,10 @@
 /* DBMS name:      Microsoft SQL Server 2008                    */
 /* Created on:     20.03.2017 3:32:51                           */
 /*==============================================================*/
+use master
 
+create database hh
+use hh
 
 if exists (select 1
    from sys.sysreferences r join sys.sysobjects o on (o.id = r.constid and o.type = 'F')
