@@ -7,6 +7,7 @@ class data:
         self.timeout = 0
         self.requirments = []
         self.conditions = []
+        self.expectations = []
 
     def load_from_conf(self):
         cfg = {}
