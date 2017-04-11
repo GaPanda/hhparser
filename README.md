@@ -13,7 +13,7 @@
 1) [MSSQL Server 2016 Express](https://www.microsoft.com/ru-ru/sql-server/sql-server-editions-express).
    
    [SQL Server Management Studio](https://docs.microsoft.com/en-us/sql/ssms/download-sql-server-management-studio-ssms)
-
+   Установка MSSQL Server и SSMS происходит с параметрами по умолчанию.
 Если вы скачиваете архив скомпилированной программы, то установка Python и библиотек не обязательно.
 
 2) [Python 3.x](https://www.python.org/downloads/)
