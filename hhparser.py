@@ -5,11 +5,12 @@ import os,sys
 import libs.hh_config as hh_config
 
 def menu():
-    print(u'\nhhparser v1.0. Программа для парсинга сайта https:\hh.ru.')
+    print(u'\nhhparser v1.1. Программа для парсинга сайта https:\hh.ru.')
     print(u'\n-----------------------------------------')
     print(u'1. Поисковый запрос')
-    print(u'2. Конфигурация программы')
-    print(u'3. Выход')
+    print(u'2. Поисковый запрос из файла')
+    print(u'3. Конфигурация программы')
+    print(u'4. Выход')
     print(u'-----------------------------------------\n')
 
 def main():
@@ -19,13 +20,24 @@ def main():
         menu()
         cmd = input(u'Введите команду: ')
         if cmd == '1':
+            cls()
+            print(u'\nПравила составления запроса:')
+            print(u'''1) Сам запрос или подзапросы необходимо выделять ковычками, например "SQL" или 'SQL'.''')
+            print(u'2) Доступные операторы над подзапросами: "&" - ПЕРЕСЕЧЕНИЕ, "+" - ОБЪЕДИНЕНИЕ, "/" - РАЗНОСТЬ.')
+            print(u'3) Можно использовать скобки, например ("ит" + "ИТ" + "IT") & "SQL".')
+            print(u'4) Допускать ошибки в составлении запроса не рекомендуется.')
             start_query(config)
         elif cmd == '2':
-            configuration(config)
+            cls()
+            print(u'\nЕще не сделал :(\n')
         elif cmd == '3':
+            cls()
+            configuration(config)
+        elif cmd == '4':
             exit()
         else:
-            print(u'Неверная команда, попробуйте еще раз!\n')
+            cls()
+            print(u'\nНеверная команда, попробуйте еще раз!\n')
 
 def start_query(config):
     #SearchQuery
@@ -37,12 +49,12 @@ def start_query(config):
     Query.insert_into_db(config.rserver_name(), config.rdb_name())
 
 def configuration(config):
-    cls()
     #Information about config.ini
     print(u'\nКонфигурационный файл config.ini.')
     print(u'\n-----------------------------------------')
     print(u'\nИмя сервера: ', config.rserver_name())
     print(u'Имя базы данных: ', config.rdb_name())
+    print(u'Имя пользователя: ', config.rusername())
     print(u'Тайм-аут между запросами: ', config.rtimeout())
     print(u'Требования:')
     print(config.rrequirments())
