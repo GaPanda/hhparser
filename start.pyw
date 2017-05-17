@@ -91,7 +91,9 @@ class MainWindow(QMainWindow):
 
     def initForm(self):
         #Search Action
-        self.search_action = QAction('&Поиск вакансий', self)
+        self.search_action = QAction('&Поиск вакансий из запроса', self)
+        self.search_file_action = QAction('&Поиск вакансий из файла', self)
+        self.show_query = QAction('&Просмотр запросов', self)
         self.settings_search_action = QAction('&Настройка БД', self)
         self.settings_database_action = QAction('&Настройка параметров поиска', self)
         self.about_action = QAction('&О программе', self)
@@ -99,7 +101,9 @@ class MainWindow(QMainWindow):
         self.menu_bar = self.menuBar()
         self.file_menu = self.menu_bar.addMenu('&Поиск')
         self.file_menu.addAction(self.search_action)
+        self.file_menu.addAction(self.search_file_action)
         self.file_menu_2 = self.menu_bar.addMenu('&Просмотр')
+        self.file_menu_2.addAction(self.show_query)
         self.file_menu_3 = self.menu_bar.addMenu('&Настройки')
         self.file_menu_3.addAction(self.settings_database_action)
         self.file_menu_3.addAction(self.settings_search_action)

@@ -1,32 +1,52 @@
 # -*- coding: utf-8 -*-
 
-import configparser
+from configparser import ConfigParser
 
 class data:
     def __init__(self):
-        self.db_name = ''
-        self.server_name = ''
+        self.db_name = None
+        self.server_name = None
         self.username = None
         self.password = None
         self.timeout = 0
         self.requirments = []
         self.conditions = []
         self.expectations = []
+        self.config_parser = ConfigParser()
 
     def load_from_conf(self):
         try:
-            config = configparser.ConfigParser()
-            config.read(['config\config.ini'], encoding='utf-8')
-            self.server_name = config['DB Settings']['server_name']
-            self.db_name = config['DB Settings']['db_name']
-            self.username = config['DB Settings']['username']
-            self.password = config['DB Settings']['password']
-            self.timeout = int(config['Parsing Settings']['timeout'])
-            self.conditions = self.string_to_list(config['Parsing Settings']['conditions'])
-            self.requirments = self.string_to_list(config['Parsing Settings']['requirments'])
-            self.expectations = self.string_to_list(config['Parsing Settings']['expectations'])
+            self.config_parser.read('config.ini', encoding='utf-8')
+            self.server_name = self.config_parser.get('DB Settings', 'server_name')
+            self.db_name = self.config_parser.get('DB Settings', 'db_name')
+            self.username = self.config_parser.get('DB Settings', 'username')
+            self.password = self.config_parser.get('DB Settings', 'password')
+            self.timeout = float(self.config_parser.get('Parsing Settings', 'timeout'))
+            self.conditions = self.string_to_list(
+                self.config_parser.get('Parsing Settings', 'conditions'))
+            self.requirments = self.string_to_list(
+                self.config_parser.get('Parsing Settings', 'requirments'))
+            self.expectations = self.string_to_list(
+                self.config_parser.get('Parsing Settings', 'expectations'))
         except:
-            print('Load config error!')
+            print('Ошибка при загрузке config.ini!')
+
+    def write_to_conf(self):
+        try:
+            self.config_parser.set(
+                'DB Settings', 'server_name', self.server_name)
+            self.config_parser.set('DB Settings', 'db_name', self.db_name)
+            self.config_parser.set('DB Settings', 'username', self.username)
+            self.config_parser.set('DB Settings', 'password', self.password)
+            self.config_parser.set('Parsing Settings', 'timeout', str(self.timeout))
+            self.config_parser.set(
+                'Parsing Settings', 'conditions', self.list_to_string(self.conditions))
+            self.config_parser.set(
+                'Parsing Settings', 'requirments', self.list_to_string(self.requirments))
+            self.config_parser.set(
+                'Parsing Settings', 'expectations', self.list_to_string(self.expectations))
+        except:
+            print('Ошибка при сохранении.')
 
     def string_to_list(self, s):
         temp = s.replace('\n', '')
@@ -36,18 +56,33 @@ class data:
             out_list.append(key.strip())
         return out_list
 
-    def write_dbs_to_conf(self, db_name, server_name, username, password):
-        pass
+    def list_to_string(self, l):
+        s = ''
+        for i in range(0, len(l)):
+            if i == (len(l) - 1):
+                s = s + l[i] + ';'
+            else:
+                s = s + l[i]
+        return s
 
-    def write_ps_to_conf(self, timeout, requirments, conditions, expectations):
-        pass
+    def dbs_to_conf(self, db_name, server_name, username, password):
+        self.server_name = server_name
+        self.db_name = db_name
+        self.username = username
+        self.password = password
+
+    def ps_to_conf(self, timeout, requirments, conditions, expectations):
+        self.timeout = timeout
+        self.requirments = requirments
+        self.conditions = conditions
+        self.expectations = expectations
 
     def rdb_name(self):
         return self.db_name
 
     def rusername(self):
         return self.username
-    
+
     def rpassword(self):
         return self.password
 

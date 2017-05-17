@@ -2,9 +2,8 @@
 
 import urllib.request
 import urllib.parse
-import os, time, re
+import os, time, re, socket
 from bs4 import BeautifulSoup
-import libs.hh_mssql as hh_mssql
 
 URL = "https://hh.ru"
 TIMEOUT = 0
@@ -138,7 +137,7 @@ class StringCalc:
                          '+': (2, lambda a, b: a.union(b)),
                          '/': (2, lambda a, b: a.difference(b))}
         self.search_string = string
-    
+
     def add_variables(self, var):
         self.variables = var
 
@@ -222,19 +221,19 @@ class StringCalc:
 class NodeQuery:
     def __init__(self, name):
         self.name_query = name
-    
+
     def set_query_number(self, num):
         self.query_number = num
-        
+
     def set_vacancies(self, vac):
         self.vacancies = vac
 
     def return_name_query(self):
         return self.name_query
-    
+
     def return_query_number(self):
         return self.query_number
-    
+
     def return_vacancies(self):
         return self.vacancies
 
@@ -260,17 +259,17 @@ class SearchQuery:
             calc.dictionary(dictionary)
             calc.replace_query_name()
             vacancy = calc.calc(calc.shunting_yard(calc.parse(calc.search_string)))
-            print(u'\nПосле обработки запроса осталось ', len(vacancy) ,' вакансий.')     
+            print(u'\nПосле обработки запроса осталось ', len(vacancy), ' вакансий.')
             if vacancy:
                 for key in vacancy:
                     self.vacancy_list.append(Vacancy(key))
                 self.sum_vac = len(self.vacancy_list)
             elif vacancy == 0:
                 os.system('cls')
-                print(u'\nВозможно вы допустили ошибку в составлении запроса!')             
+                print(u'\nВозможно вы допустили ошибку в составлении запроса!')
             else:
                 os.system('cls')
-                print(u'\nВакансий по данному запросу не найдено!')           
+                print(u'\nВакансий по данному запросу не найдено!')
         else:
             os.system('cls')
             print(u'\nНеправильно составлен запрос!')
@@ -319,12 +318,12 @@ class SearchQuery:
         if 0 < int(temp) < 20:
             sum_pages = 1
         else:
-            sum_pages = int(int(temp) // 20)
+            sum_pages = int(int(temp) // 20) + 1
         if sum_pages != None:
             return sum_pages
         else:
             return 0
-    
+
     def get_vacancy_information(self, requirments, conditions, expectations):
         i = 1
         for key in self.vacancy_list:
@@ -335,71 +334,12 @@ class SearchQuery:
             #print('Вакансия: ', i)
             #key.print_result()
             i += 1
-    
+
     def progress_bar(self):
         prog = int((self.cur_vac_num / self.sum_vac)*100)
         print(u'Обработка данных выполнена на {0}%\r'.format(prog), end='')
 
-    def format_string(self, string):
-        temp = string.split("'")
-        temp2 = ''
-        for key in temp:
-            temp2 += key
-        return temp2
 
-    #Убрать от сюда в mssql
-    def db_add_qustion(self):
-        while True:
-            q_text = input(u'\nХотите добавить в базу данных?(y/n): ')
-            if q_text == 'y':
-                return 1
-            elif q_text == 'n':
-                return 0
-            else:
-                print(u'Неправильный ввод!')
-
-    #Убрать от сюда в mssql
-    def insert_into_db(self, server_name, db_name):
-        conn = hh_mssql.MSSQLConnection(server_name, db_name)
-        conn_result = conn.check_connection()
-        if (self.vacancy_list != []) & (conn_result == 1):
-            ans = self.db_add_qustion()
-            if ans == 1:
-                start = time.time()
-                i = 0
-                print(u'\nДобавление в БД...')
-                id_vacancy = 0
-                id_query = conn.insert_query(self.search_text, self.search_time)
-                for key in self.vacancy_list:
-                    try:    
-                        id_vacancy = conn.insert_vacancy(key.vacancy_name, key.vacancy_company, key.vacancy_salary, 
-                        key.currency, key.vacancy_city, key.vacancy_metro, key.vacancy_experience,
-                        key.vacancy_date, key.vacancy_url)
-                        for c_key in key.conditions_list:
-                            id_con = conn.insert_text_condition(self.format_string(c_key))
-                            conn.insert_vac_con(id_vacancy, id_con)
-                        for e_key in key.expectations_list:
-                            id_exp = conn.insert_text_expectation(self.format_string(e_key))
-                            conn.insert_vac_exp(id_vacancy, id_exp)
-                        for r_key in key.requirments_list:
-                            id_req = conn.insert_text_requerments(self.format_string(r_key))
-                            conn.insert_vac_req(id_vacancy, id_req)
-                        conn.insert_query_vacancy(id_vacancy, id_query)
-                    except:
-                        conn.delete_after_error(id_vacancy)
-                    i += 1
-                finish = time.time() - start
-                print(u'\nДобавление вакансий в базу длилось ', finish, ' секунд.')
-                os.system("pause")
-                os.system('cls')
-            elif ans == 0:
-                os.system('cls')
-                print(u'\nОперация добавления отменена!')
-            else:
-                print(u'Ошибка!')
-        elif (self.vacancy_list != []) & (conn_result == 0):
-            os.system('cls')
-            print(u'\nСоединение с базой не установлено!')
 
     def end_of_search(self):
         if self.vacancy_list:
