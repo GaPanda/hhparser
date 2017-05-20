@@ -1,6 +1,6 @@
 import pyodbc
 
-class MSSQLConnection:
+class MssqlConnection:
     def __init__(self, server_name, db_name):
         self.connection_string = 'DRIVER={SQL Server};SERVER=' + server_name + ';DATABASE=' + db_name + ';'
 
@@ -11,6 +11,37 @@ class MSSQLConnection:
             return 1
         except:
             return 0
+
+    def format_string(self, string):
+        temp = string.split("'")
+        temp2 = ''
+        for key in temp:
+            temp2 += key
+        return temp2
+
+    def insert_all_data(self, query):
+        i = 0
+        id_vacancy = 0
+        id_query = self.insert_query(query.search_text, query.search_time)
+        for key in query.vacancy_list:
+            try:
+                id_vacancy = self.insert_vacancy(key.vacancy_name, key.vacancy_company, key.vacancy_salary, 
+                key.currency, key.vacancy_city, key.vacancy_metro, key.vacancy_experience,
+                key.vacancy_date, key.vacancy_url)
+                for c_key in key.conditions_list:
+                    id_con = self.insert_text_condition(self.format_string(c_key))
+                    self.insert_vac_con(id_vacancy, id_con)
+                for e_key in key.expectations_list:
+                    id_exp = self.insert_text_expectation(self.format_string(e_key))
+                    self.insert_vac_exp(id_vacancy, id_exp)
+                for r_key in key.requirments_list:
+                    id_req = self.insert_text_requerments(self.format_string(r_key))
+                    self.insert_vac_req(id_vacancy, id_req)
+                self.insert_query_vacancy(id_vacancy, id_query)
+            except:
+                self.delete_after_error(id_vacancy)
+            i += 1
+        raise Exception('\nДобавление успешно завершено.')
         
     def insert_unique_value(self, value_in, table_info):
         conn = pyodbc.connect(self.connection_string)
@@ -43,6 +74,63 @@ class MSSQLConnection:
             row = cursor.fetchone()
             conn.close()
             return row[0]
+
+    def insert_query(self, name_query, search_time):
+        id_query_name = self.insert_query_name(name_query)
+        conn = pyodbc.connect(self.connection_string)
+        cursor = conn.cursor()
+        try:
+            cursor.execute("insert into Query (id_query_name, time_query, time_analyze_query) values ("+ id_query_name.__str__() + ", GETDATE()," + search_time.__str__() +")")
+            conn.commit()
+        finally:
+            cursor.execute("SELECT @@IDENTITY")
+            row = cursor.fetchone()
+            conn.close()
+            return row[0]
+
+    def insert_vacancy(self, n_v, n_c, sal, cur, city, metro, exp, date_vacancy, url_vacancy):
+        id_name_vacancy = self.insert_name_vacancy(n_v)
+        id_company = self.insert_name_company(n_c)
+        if sal != 'NULL':
+            id_currency = self.insert_name_currency(cur)
+            id_salary = self.insert_salary(sal, id_currency)
+        else:
+            id_salary = 'NULL'
+        id_experience = self.insert_experience(exp)
+        id_city = self.insert_name_city(city)
+        id_metro = self.insert_name_metro_station(metro)
+        id_location = self.insert_location(id_city, id_metro)
+        if date_vacancy != 'NULL':
+            date_vacancy = "'" + date_vacancy + "'"
+        else:
+            date_vacancy = 'NULL'
+        conn = pyodbc.connect(self.connection_string)
+        cursor = conn.cursor()
+        try:
+            cursor.execute("insert into Vacancy (id_name_vacancy, id_company, id_salary, id_experience,"\
+                + "id_location, date_vacancy, url_vacancy) values (" + id_name_vacancy.__str__() + "," + id_company.__str__()\
+                + "," + id_salary.__str__() + "," + id_experience.__str__() + "," + id_location.__str__()\
+                +"," + date_vacancy + ",'" + url_vacancy +"')")
+            conn.commit()
+        finally:
+            cursor.execute("select id_vacancy from Vacancy where url_vacancy = '" + url_vacancy + "'")
+            row = cursor.fetchone()
+            conn.close()
+            return row[0]
+
+    def delete_after_error(self, id_vacancy):
+        id_v = id_vacancy.__str__()
+        conn = pyodbc.connect(self.connection_string)
+        cursor = conn.cursor()
+        try:
+            cursor.execute("delete from Vac_con where id_vacancy=" + id_v)
+            cursor.execute("delete from Vac_exp where id_vacancy=" + id_v)
+            cursor.execute("delete from Vac_req where id_vacancy=" + id_v)
+            cursor.execute("delete from Query_vacancy where id_vacancy=" + id_v)
+            cursor.execute("delete from Vacancy where id_vacancy=" + id_v)
+            conn.commit()
+        finally:
+            conn.close()
 
     def insert_query_name(self, value):
         table_info = ['Query_name', 'id_query_name', 'name_query']
@@ -121,60 +209,3 @@ class MSSQLConnection:
         id_cur = self.insert_name_currency(currency)
         id_r = self.insert_m_m_value(value, id_cur, table_info)
         return id_r
-
-    def insert_query(self, name_query, search_time):
-        id_query_name = self.insert_query_name(name_query)
-        conn = pyodbc.connect(self.connection_string)
-        cursor = conn.cursor()
-        try:
-            cursor.execute("insert into Query (id_query_name, time_query, time_analyze_query) values ("+ id_query_name.__str__() + ", GETDATE()," + search_time.__str__() +")")
-            conn.commit()
-        finally:
-            cursor.execute("SELECT @@IDENTITY")
-            row = cursor.fetchone()
-            conn.close()
-            return row[0]
-
-    def insert_vacancy(self, n_v, n_c, sal, cur, city, metro, exp, date_vacancy, url_vacancy):
-        id_name_vacancy = self.insert_name_vacancy(n_v)
-        id_company = self.insert_name_company(n_c)
-        if sal != 'NULL':
-            id_currency = self.insert_name_currency(cur)
-            id_salary = self.insert_salary(sal, id_currency)
-        else:
-            id_salary = 'NULL'
-        id_experience = self.insert_experience(exp)
-        id_city = self.insert_name_city(city)
-        id_metro = self.insert_name_metro_station(metro)
-        id_location = self.insert_location(id_city, id_metro)
-        if date_vacancy != 'NULL':
-            date_vacancy = "'" + date_vacancy + "'"
-        else:
-            date_vacancy = 'NULL'
-        conn = pyodbc.connect(self.connection_string)
-        cursor = conn.cursor()
-        try:
-            cursor.execute("insert into Vacancy (id_name_vacancy, id_company, id_salary, id_experience,"\
-                + "id_location, date_vacancy, url_vacancy) values (" + id_name_vacancy.__str__() + "," + id_company.__str__()\
-                + "," + id_salary.__str__() + "," + id_experience.__str__() + "," + id_location.__str__()\
-                +"," + date_vacancy + ",'" + url_vacancy +"')")
-            conn.commit()
-        finally:
-            cursor.execute("select id_vacancy from Vacancy where url_vacancy = '" + url_vacancy + "'")
-            row = cursor.fetchone()
-            conn.close()
-            return row[0]
-
-    def delete_after_error(self, id_vacancy):
-        id_v = id_vacancy.__str__()
-        conn = pyodbc.connect(self.connection_string)
-        cursor = conn.cursor()
-        try:
-            cursor.execute("delete from Vac_con where id_vacancy=" + id_v)
-            cursor.execute("delete from Vac_exp where id_vacancy=" + id_v)
-            cursor.execute("delete from Vac_req where id_vacancy=" + id_v)
-            cursor.execute("delete from Query_vacancy where id_vacancy=" + id_v)
-            cursor.execute("delete from Vacancy where id_vacancy=" + id_v)
-            conn.commit()
-        finally:
-            conn.close()

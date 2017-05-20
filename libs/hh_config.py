@@ -2,7 +2,7 @@
 
 from configparser import ConfigParser
 
-class data:
+class Data:
     def __init__(self):
         self.db_name = None
         self.server_name = None

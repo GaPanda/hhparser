@@ -1,31 +1,32 @@
 # -*- coding: utf-8 -*-
 
-import urllib.request
-import urllib.parse
-import os, time, re, socket
+import re
+from urllib.request import urlopen
+from urllib import parse
+import time
 from bs4 import BeautifulSoup
 
 URL = "https://hh.ru"
-TIMEOUT = 0
-
-def get_html(url):
-    '''Получение кода страницы'''
-    #Timeout при запросе
-    time.sleep(TIMEOUT)
-    page = urllib.request.urlopen(url)
-    return page.read()
 
 class Vacancy:
     '''Класс описывающий вакансию'''
-    def __init__(self, url):
+    def __init__(self, url, timeout):
+        self.timeout = timeout
         self.vacancy_url = url
         self.requirments_list = []
         self.conditions_list = []
         self.expectations_list = []
 
+    def get_html(self, url, timeout):
+        '''Получение кода страницы'''
+        #Timeout при запросе
+        time.sleep(timeout)
+        page = urlopen(url)
+        return page.read()
+
     def search_on_page(self):
         '''Поиск данных на странице вакансии'''
-        page = get_html(self.vacancy_url)
+        page = self.get_html(self.vacancy_url, self.timeout)
         soup = BeautifulSoup(page, 'lxml')
         self.vacancy_name = soup.find(
             'h1', class_="title b-vacancy-title").get_text()
@@ -239,13 +240,29 @@ class NodeQuery:
 
 class SearchQuery:
     '''Класс поискового запроса'''
-    def __init__(self, search_text):
-        self.vacancy_list = []
-        self.search_text = search_text.strip()
-        self.page_number = 0
-        self.cur_vac_num = 0
-        self.sum_vac = 0
+    def __init__(self, search_text, timeout, requirments, expectations, conditions):
+        self.vacancy_list = []       
+        self.vacancy_analized = 0
+        self.vacancy_count = 0
         self.search_time = 0
+        self.search_text = search_text.strip()
+        self.timeout = timeout
+        self.requirments = requirments
+        self.expectations = expectations
+        self.conditions = conditions
+
+    def set_vacancy_count(self, value):
+        self.vacancy_count = value
+    
+    def set_vacancy_analized(self, value):
+        self.vacancy_analized = value
+
+    def get_html(self, url, timeout):
+        '''Получение кода страницы'''
+        #Timeout при запросе
+        time.sleep(timeout)
+        page = urlopen(url)
+        return page.read()
 
     def start_search(self):
         calc = StringCalc(self.search_text)
@@ -262,38 +279,33 @@ class SearchQuery:
             print(u'\nПосле обработки запроса осталось ', len(vacancy), ' вакансий.')
             if vacancy:
                 for key in vacancy:
-                    self.vacancy_list.append(Vacancy(key))
-                self.sum_vac = len(self.vacancy_list)
+                    self.vacancy_list.append(Vacancy(key, self.timeout))
+                self.set_vacancy_count(len(self.vacancy_list))
             elif vacancy == 0:
-                os.system('cls')
-                print(u'\nВозможно вы допустили ошибку в составлении запроса!')
+                raise Exception('Возможно вы допустили ошибку в составлении запроса.')
             else:
-                os.system('cls')
-                print(u'\nВакансий по данному запросу не найдено!')
+                raise Exception('Вакансий по данному запросу не найдено.')
         else:
-            os.system('cls')
-            print(u'\nНеправильно составлен запрос!')
+            raise Exception('Неправильно составлен запрос.')
 
     def query_search(self, search_text):
         vacancy_list = []
         self.search_time_start = time.time()
         search_url = URL + "/search/vacancy?clusters=true&area=2&" + \
             "enable_snippets=true&text={0}".format(
-                urllib.parse.quote_plus(search_text))
+                parse.quote_plus(search_text))
         count_pages = self.count_pages(search_url)
-        if count_pages is None:
-            os.system('cls')
-        else:
+        if count_pages:
             for i in range(0, count_pages):
                 search_url = URL + "/search/vacancy?clusters=true&area=2" + \
                     "&enable_snippets=true&text={0}&page={1}".format(
-                        urllib.parse.quote_plus(search_text), str(i))
-                self.search_on_page(search_url, vacancy_list)
+                        parse.quote_plus(search_text), str(i))
+                self.search_on_page(search_url, vacancy_list)            
         print(u'\nПо запросу ', search_text, ' найдено ', len(vacancy_list), ' вакансий.')
         return vacancy_list
 
     def search_on_page(self, search_url, vacancy_list):
-        page = get_html(search_url)
+        page = self.get_html(search_url, self.timeout)
         soup = BeautifulSoup(page, 'lxml')
         vacancy = soup.find(
             'div', class_="search-result").find_all('div', class_="search-result-item__head")
@@ -305,7 +317,7 @@ class SearchQuery:
 
     def count_pages(self, search_url):
         try:
-            page = get_html(search_url)
+            page = self.get_html(search_url, self.timeout)
             soup = BeautifulSoup(page, 'lxml')
             search_result = soup.find(
                 'div', class_='resumesearch__result-count').get_text()
@@ -319,29 +331,31 @@ class SearchQuery:
             sum_pages = 1
         else:
             sum_pages = int(int(temp) // 20) + 1
+            print(sum_pages)
         if sum_pages != None:
-            return sum_pages
+            if sum_pages < 100:
+                return sum_pages
+            else:
+                raise Exception('В подзапросе больше 2000 вакансий.')
         else:
             return 0
 
-    def get_vacancy_information(self, requirments, conditions, expectations):
+    def get_vacancy_information(self):
         i = 1
         for key in self.vacancy_list:
-            self.cur_vac_num = i
+            self.set_vacancy_analized(i)
             key.search_on_page()
-            key.description_parse(requirments, conditions, expectations)
+            key.description_parse(self.requirments, self.conditions, self.expectations)
             self.progress_bar()
             #print('Вакансия: ', i)
             #key.print_result()
             i += 1
 
     def progress_bar(self):
-        prog = int((self.cur_vac_num / self.sum_vac)*100)
+        prog = int((self.vacancy_analized / self.vacancy_count)*100)
         print(u'Обработка данных выполнена на {0}%\r'.format(prog), end='')
-
-
 
     def end_of_search(self):
         if self.vacancy_list:
             self.search_time = time.time() - self.search_time_start
-            print(u'\nПоиск и обработка вакансий длились ', self.search_time, ' секунд.')
+            print(u'\nПоиск и обработка вакансий длились ', self.search_time, ' секунд.')    
