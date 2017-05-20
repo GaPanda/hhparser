@@ -41,7 +41,6 @@ class MssqlConnection:
             except:
                 self.delete_after_error(id_vacancy)
             i += 1
-        raise Exception('\nДобавление успешно завершено.')
         
     def insert_unique_value(self, value_in, table_info):
         conn = pyodbc.connect(self.connection_string)

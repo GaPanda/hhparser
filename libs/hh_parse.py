@@ -5,6 +5,7 @@ from urllib.request import urlopen
 from urllib import parse
 import time
 from bs4 import BeautifulSoup
+from PyQt5.QtCore import QThread, QObject, pyqtSignal, pyqtSlot
 
 URL = "https://hh.ru"
 
@@ -238,9 +239,14 @@ class NodeQuery:
     def return_vacancies(self):
         return self.vacancies
 
-class SearchQuery:
+class SearchQuery(QObject):
+    
+    vacancy_count_signal = pyqtSignal(int)
+    vacancy_analized_signal = pyqtSignal(int)
+    query_finished_signal = pyqtSignal()
+
     '''Класс поискового запроса'''
-    def __init__(self, search_text, timeout, requirments, expectations, conditions):
+    def set_query_config(self, search_text, timeout, requirments, expectations, conditions):
         self.vacancy_list = []       
         self.vacancy_analized = 0
         self.vacancy_count = 0
@@ -251,11 +257,18 @@ class SearchQuery:
         self.expectations = expectations
         self.conditions = conditions
 
+    @pyqtSlot()
     def set_vacancy_count(self, value):
         self.vacancy_count = value
-    
+        self.vacancy_count_signal.emit(self.vacancy_count)
+
+    @pyqtSlot()
     def set_vacancy_analized(self, value):
         self.vacancy_analized = value
+        self.vacancy_analized_signal.emit(self.vacancy_analized)
+
+    def set_search_time(self, time):
+        self.search_time = time
 
     def get_html(self, url, timeout):
         '''Получение кода страницы'''
@@ -276,7 +289,6 @@ class SearchQuery:
             calc.dictionary(dictionary)
             calc.replace_query_name()
             vacancy = calc.calc(calc.shunting_yard(calc.parse(calc.search_string)))
-            print(u'\nПосле обработки запроса осталось ', len(vacancy), ' вакансий.')
             if vacancy:
                 for key in vacancy:
                     self.vacancy_list.append(Vacancy(key, self.timeout))
@@ -300,8 +312,7 @@ class SearchQuery:
                 search_url = URL + "/search/vacancy?clusters=true&area=2" + \
                     "&enable_snippets=true&text={0}&page={1}".format(
                         parse.quote_plus(search_text), str(i))
-                self.search_on_page(search_url, vacancy_list)            
-        print(u'\nПо запросу ', search_text, ' найдено ', len(vacancy_list), ' вакансий.')
+                self.search_on_page(search_url, vacancy_list)
         return vacancy_list
 
     def search_on_page(self, search_url, vacancy_list):
@@ -331,7 +342,6 @@ class SearchQuery:
             sum_pages = 1
         else:
             sum_pages = int(int(temp) // 20) + 1
-            print(sum_pages)
         if sum_pages != None:
             if sum_pages < 100:
                 return sum_pages
@@ -340,22 +350,14 @@ class SearchQuery:
         else:
             return 0
 
-    def get_vacancy_information(self):
+    def get_vacancy_information(self, start_time):
         i = 1
         for key in self.vacancy_list:
             self.set_vacancy_analized(i)
             key.search_on_page()
             key.description_parse(self.requirments, self.conditions, self.expectations)
-            self.progress_bar()
             #print('Вакансия: ', i)
             #key.print_result()
             i += 1
-
-    def progress_bar(self):
-        prog = int((self.vacancy_analized / self.vacancy_count)*100)
-        print(u'Обработка данных выполнена на {0}%\r'.format(prog), end='')
-
-    def end_of_search(self):
-        if self.vacancy_list:
-            self.search_time = time.time() - self.search_time_start
-            print(u'\nПоиск и обработка вакансий длились ', self.search_time, ' секунд.')    
+        self.search_time = int(time.time() - start_time)
+        self.query_finished_signal.emit()

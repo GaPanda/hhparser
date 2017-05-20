@@ -1,0 +1,4 @@
+"Apache" + "QT"
+
+"Apache" & "QT"
+"IT директор"
