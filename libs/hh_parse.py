@@ -30,16 +30,16 @@ class Vacancy:
         page = self.get_html(self.vacancy_url, self.timeout)
         soup = BeautifulSoup(page, 'lxml')
         self.vacancy_name = soup.find(
-            'h1', class_="title b-vacancy-title").get_text()
+            'h1', class_="title b-vacancy-title").get_text().strip()
         self.vacancy_company = soup.find(
-            'div', class_="companyname").get_text()
+            'div', class_="companyname").get_text().strip()
         self.vacancy_salary = soup.find('td', class_="l-content-colum-1 b-v-info-content").find(
-            'div', class_="l-paddings").get_text()
+            'div', class_="l-paddings").get_text().strip()
         try:
             self.vacancy_salary = soup.find('td', class_="l-content-colum-1 b-v-info-content").find(
-            'meta', itemprop = "baseSalary").get('content')
+            'meta', itemprop = "baseSalary").get('content').strip()
             self.currency = soup.find('td', class_="l-content-colum-1 b-v-info-content").find(
-            'meta', itemprop = "salaryCurrency").get('content')
+            'meta', itemprop = "salaryCurrency").get('content').strip()
         except:
             self.vacancy_salary = "NULL"
             self.currency = "NULL" 
@@ -278,6 +278,8 @@ class SearchQuery(QObject):
         return page.read()
 
     def start_search(self):
+        if len(self.search_text) > 200:
+            raise Exception('Запрос больше 200 символов.')
         calc = StringCalc(self.search_text)
         dictionary = calc.get_variables()
         if dictionary:
@@ -356,8 +358,8 @@ class SearchQuery(QObject):
             self.set_vacancy_analized(i)
             key.search_on_page()
             key.description_parse(self.requirments, self.conditions, self.expectations)
-            #print('Вакансия: ', i)
-            #key.print_result()
+            print('Вакансия: ', i)
+            key.print_result()
             i += 1
         self.search_time = int(time.time() - start_time)
         self.query_finished_signal.emit()

@@ -68,7 +68,7 @@ class ConsoleApplication:
     def check_connection(self):
         config = Data()
         config.load_from_conf()
-        conn = MssqlConnection(config.rserver_name(), config.rdb_name())
+        conn = MssqlConnection(config.rserver_name(), config.rdb_name(), config.rusername(), config.rpassword())
         print('Установка соединения с БД...\n')
         check = conn.check_connection()
         if check == 1:
@@ -127,11 +127,11 @@ class Query(ConsoleApplication):
 
     def add_into_database(self):
         self.stats.search_time_print()
-        conn = MssqlConnection(self.config.rserver_name(), self.config.rdb_name())
+        conn = MssqlConnection(self.config.rserver_name(), self.config.rdb_name(), self.config.rusername(), self.config.rpassword())
         ans = self.db_add_qustion()
         if ans == 1:
             conn_result = conn.check_connection()
-            if (self.query_object.vacancy_list != []) & (conn_result == 1):
+            if conn_result == 1:
                 try:
                     conn.insert_all_data(self.query_object)
                     print(u'Добавление успешно завершено.')
@@ -141,7 +141,7 @@ class Query(ConsoleApplication):
                 except:
                     self.cls()
                     print(u'\nСообщение: Непредвиденная ошибка')
-            elif (self.query_object.vacancy_list != []) & (conn_result == 0):
+            else:
                 self.cls()
                 print(u'\nСоединение с базой не установлено.')
         else:
@@ -195,11 +195,11 @@ class QueryFile(ConsoleApplication):
         return queries_names
 
     def add_into_database(self):
-        conn = MssqlConnection(self.config.rserver_name(), self.config.rdb_name())
+        conn = MssqlConnection(self.config.rserver_name(), self.config.rdb_name(), self.config.rusername(), self.config.rpassword())
         ans = self.db_add_qustion()
         if ans == 1:
             conn_result = conn.check_connection()
-            if (self.query_object.vacancy_list != []) & (conn_result == 1):
+            if conn_result == 1:
                 try:
                     for query in self.queries:
                         print(u'Добавление {0} в базу данных.'.format(query.search_text))
@@ -211,7 +211,7 @@ class QueryFile(ConsoleApplication):
                 except:
                     self.cls()
                     print('\nСообщение: Непредвиденная ошибка')
-            elif (self.query_object.vacancy_list != []) & (conn_result == 0):
+            else:
                 self.cls()
                 print('\nСоединение с базой не установлено.')
         else:

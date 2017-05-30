@@ -1,12 +1,16 @@
-/*==============================================================*/
-/* DBMS name:      Microsoft SQL Server 2008                    */
-/* Created on:     20.03.2017 3:32:51                           */
-/*==============================================================*/
+/*Выполнение запросов необходимо осуществлять блоками*/
+/*Для этого необходимо выделить блок и нажать "Выполнить"*/
+/*=====================================================================*/
+/*Блок 1*/
+/*===================Создание базы данных========================*/
 use master
 
 create database hh
 use hh
 
+/*=====================================================================*/
+/*Блок 2*/
+/*====================Создание таблиц базы данных=========================*/
 if exists (select 1
    from sys.sysreferences r join sys.sysobjects o on (o.id = r.constid and o.type = 'F')
    where r.fkeyid = object_id('Location') and o.name = 'FK_LOCATION_REFERENCE_CITY')
@@ -531,3 +535,138 @@ alter table Vacancy
       references Experience (id_experience)
 go
 
+/*=====================================================================*/
+/*Блок 3*/
+/*======================Процедуры======================*/
+CREATE PROCEDURE VACANCIES 
+@id_query int
+AS
+BEGIN
+SELECT Vacancy.id_vacancy, Name_vacancy.name_vacancy, Company.name_company, date_vacancy
+FROM Vacancy, Query_vacancy, Name_vacancy, Company
+WHERE Vacancy.id_vacancy = Query_vacancy.id_vacancy
+AND Query_vacancy.id_query = @id_query
+AND Name_vacancy.id_name_vacancy = Vacancy.id_name_vacancy
+AND Company.id_company = Vacancy.id_company
+END
+
+/*=====================================================================*/
+
+CREATE PROCEDURE QUERIES AS
+BEGIN
+SELECT Query.id_query, name_query, time_query, time_analyze_query, T2.T1
+	FROM Query, Query_name, (SELECT Query.id_query, COUNT(id_vacancy) AS T1
+								FROM Query, Query_vacancy
+								WHERE Query.id_query = Query_vacancy.id_query
+								GROUP BY Query.id_query) AS T2
+	WHERE Query.id_query_name = Query_name.id_query_name and T2.id_query = Query.id_query
+	ORDER BY time_query DESC
+END
+
+/*=====================================================================*/
+
+CREATE PROCEDURE VACANCY_PROC
+@id_vacancy int
+AS
+BEGIN
+SELECT Vacancy.id_vacancy, name_vacancy.name_vacancy, Company.name_company, Salary.salary, Currency.name_currency,
+Experience.text_experience, date_vacancy, url_vacancy
+FROM Vacancy, Name_vacancy, Company, Salary, Currency, Experience
+WHERE Vacancy.id_name_vacancy = Name_vacancy.id_name_vacancy
+AND Company.id_company = Vacancy.id_company
+AND Salary.id_salary = Vacancy.id_salary
+AND Salary.id_currency = Currency.id_currency
+AND Experience.id_experience = Vacancy.id_experience
+AND Vacancy.id_vacancy = @id_vacancy
+END
+
+/*=====================================================================*/
+
+CREATE PROCEDURE VACANCY_ERROR_PROC
+@id_vacancy int
+AS
+BEGIN
+SELECT Vacancy.id_vacancy, name_vacancy.name_vacancy, Company.name_company, Experience.text_experience, date_vacancy, url_vacancy
+FROM Vacancy, Name_vacancy, Company, Experience
+WHERE Vacancy.id_name_vacancy = Name_vacancy.id_name_vacancy
+AND Company.id_company = Vacancy.id_company
+AND Experience.id_experience = Vacancy.id_experience
+AND Vacancy.id_vacancy = @id_vacancy
+END
+
+/*=====================================================================*/
+
+CREATE PROCEDURE LOCATION_PROC
+@id_vacancy int
+AS
+BEGIN
+SELECT id_vacancy, name_city, name_metro_station FROM Vacancy, Location, City, Metro_station
+WHERE Vacancy.id_location = Location.id_location
+AND Location.id_city = City.id_city
+AND Metro_station.id_metro_station = Location.id_metro_station
+AND Vacancy.id_vacancy = 9278
+END
+
+/*=====================================================================*/
+
+CREATE PROCEDURE REQUERMENTS_PROC
+@id_vacancy int
+AS
+BEGIN
+SELECT text_requerment FROM Requerments, Vac_req
+WHERE Vac_req.id_requerment = Requerments.id_requerment
+AND Vac_req.id_vacancy = @id_vacancy
+END
+
+/*=====================================================================*/
+
+CREATE PROCEDURE EXPECTATIONS_PROC
+@id_vacancy int
+AS
+BEGIN
+SELECT text_expectation FROM Expectations, Vac_exp
+WHERE Vac_exp.id_expectation = Expectations.id_expectation
+AND Vac_exp.id_vacancy = @id_vacancy
+END
+
+/*=====================================================================*/
+
+CREATE PROCEDURE CONDITIONS_PROC
+@id_vacancy int
+AS
+BEGIN
+SELECT text_condition FROM Conditions, Vac_con
+WHERE Vac_con.id_condition = Conditions.id_condition
+AND Vac_con.id_vacancy = @id_vacancy
+END
+
+/*=====================================================================*/
+/*Блок 4*/
+/*======================Триггеры======================*/
+
+CREATE TRIGGER INSERT_QUERY 
+ON QUERY INSTEAD OF INSERT
+AS
+BEGIN
+DECLARE @time int
+DECLARE @id_query_name int
+SET @time = (SELECT time_analyze_query FROM inserted)
+SET @id_query_name = (SELECT id_query_name FROM inserted)
+INSERT INTO Query(id_query_name, time_query, time_analyze_query) values(@id_query_name, GETDATE(), @time)
+END
+
+/*=====================================================================*/
+
+CREATE TRIGGER DEL_VAC 
+ON Vacancy
+INSTEAD OF DELETE
+AS
+BEGIN
+delete from Vac_con where id_vacancy IN (SELECT id_vacancy FROM deleted)
+delete from Vac_exp where id_vacancy IN (SELECT id_vacancy FROM deleted)
+delete from Vac_req where id_vacancy IN (SELECT id_vacancy FROM deleted)
+delete from Query_vacancy where id_vacancy IN (SELECT id_vacancy FROM deleted)
+delete from Vacancy where id_vacancy IN (SELECT id_vacancy FROM deleted)
+END
+
+/*=====================================================================*/

@@ -1,8 +1,8 @@
 import pyodbc
 
 class MssqlConnection:
-    def __init__(self, server_name, db_name):
-        self.connection_string = 'DRIVER={SQL Server};SERVER=' + server_name + ';DATABASE=' + db_name + ';'
+    def __init__(self, server_name, db_name, username, password):
+        self.connection_string = 'DRIVER={SQL Server};SERVER=' + server_name + ';DATABASE=' + db_name + ';UID=' + username + ';PWD=' + password
 
     def check_connection(self):
         try:
@@ -11,6 +11,57 @@ class MssqlConnection:
             return 1
         except:
             return 0
+
+    def queries_show(self):
+        conn = pyodbc.connect(self.connection_string)
+        cursor = conn.cursor()
+        queries = cursor.execute('EXEC QUERIES')
+        return queries
+
+    def vacancies_show(self, value):
+        conn = pyodbc.connect(self.connection_string)
+        cursor = conn.cursor()
+        vacancies = cursor.execute('EXEC VACANCIES ' + str(value))
+        return vacancies
+
+    def vacancy_show(self, value):
+        conn = pyodbc.connect(self.connection_string)
+        cursor = conn.cursor()
+        cursor.execute('EXEC VACANCY_PROC ' + str(value))
+        vacancy = cursor.fetchone()
+        return vacancy
+
+    def vacancy_show_error(self, value):
+        conn = pyodbc.connect(self.connection_string)
+        cursor = conn.cursor()
+        cursor.execute('EXEC VACANCY_ERROR_PROC ' + str(value))
+        vacancy = cursor.fetchone()
+        return vacancy
+
+    def vacancy_show_location(self, value):
+        conn = pyodbc.connect(self.connection_string)
+        cursor = conn.cursor()
+        cursor.execute('EXEC LOCATION_PROC ' + str(value))
+        vacancy_location = cursor.fetchone()
+        return vacancy_location
+
+    def vacancy_show_req(self, value):
+        conn = pyodbc.connect(self.connection_string)
+        cursor = conn.cursor()
+        vacancy_req = cursor.execute('EXEC REQUERMENTS_PROC ' + str(value))
+        return vacancy_req
+
+    def vacancy_show_exp(self, value):
+        conn = pyodbc.connect(self.connection_string)
+        cursor = conn.cursor()
+        vacancy_exp = cursor.execute('EXEC EXPECTATIONS_PROC ' + str(value))
+        return vacancy_exp
+
+    def vacancy_show_con(self, value):
+        conn = pyodbc.connect(self.connection_string)
+        cursor = conn.cursor()
+        vacancy_con = cursor.execute('EXEC CONDITIONS_PROC ' + str(value))
+        return vacancy_con
 
     def format_string(self, string):
         temp = string.split("'")
@@ -79,7 +130,7 @@ class MssqlConnection:
         conn = pyodbc.connect(self.connection_string)
         cursor = conn.cursor()
         try:
-            cursor.execute("insert into Query (id_query_name, time_query, time_analyze_query) values ("+ id_query_name.__str__() + ", GETDATE()," + search_time.__str__() +")")
+            cursor.execute("insert into Query (id_query_name, time_analyze_query) values ("+ id_query_name.__str__() + "," + search_time.__str__() +")")
             conn.commit()
         finally:
             cursor.execute("SELECT @@IDENTITY")
@@ -90,6 +141,7 @@ class MssqlConnection:
     def insert_vacancy(self, n_v, n_c, sal, cur, city, metro, exp, date_vacancy, url_vacancy):
         id_name_vacancy = self.insert_name_vacancy(n_v)
         id_company = self.insert_name_company(n_c)
+        print(cur)
         if sal != 'NULL':
             id_currency = self.insert_name_currency(cur)
             id_salary = self.insert_salary(sal, id_currency)
@@ -122,10 +174,6 @@ class MssqlConnection:
         conn = pyodbc.connect(self.connection_string)
         cursor = conn.cursor()
         try:
-            cursor.execute("delete from Vac_con where id_vacancy=" + id_v)
-            cursor.execute("delete from Vac_exp where id_vacancy=" + id_v)
-            cursor.execute("delete from Vac_req where id_vacancy=" + id_v)
-            cursor.execute("delete from Query_vacancy where id_vacancy=" + id_v)
             cursor.execute("delete from Vacancy where id_vacancy=" + id_v)
             conn.commit()
         finally:
@@ -205,6 +253,5 @@ class MssqlConnection:
 
     def insert_salary(self, value, currency):
         table_info = ['Salary', 'id_salary', 'salary', 'id_currency']
-        id_cur = self.insert_name_currency(currency)
-        id_r = self.insert_m_m_value(value, id_cur, table_info)
+        id_r = self.insert_m_m_value(value, currency, table_info)
         return id_r

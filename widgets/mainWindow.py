@@ -1,24 +1,30 @@
 # -*- coding: utf-8 -*-
 
 import sys
+
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QAction, QPushButton, QStatusBar,
                              QMenuBar, QDesktopWidget, QApplication, QStackedWidget, QHBoxLayout)
-from PyQt5.QtCore import QCoreApplication, QBasicTimer, QRect
+from PyQt5.QtCore import QCoreApplication, QBasicTimer, QRect, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QIcon, QFont
+
 from widgets.searchWidget import SearchWidget
 from widgets.searchFileWidget import SearchFileWidget
 from widgets.serverSettingsWidget import ServerSettingsWidget
 from widgets.searchSettingsWidget import SearchSettingsWidget
 from widgets.queryWidget import QueryWidget
 from widgets.infoWidget import InfoWidget
+from widgets.vacancyWidget import VacancyWidget
 
 class MainWindow(QMainWindow):
-    
+    sig_status_changed = pyqtSignal(bool)
+
     def __init__(self):
         super().__init__()
         self.initForm()
 
     def initForm(self):
+        #Query
+        self.status = False
         #Search Action
         self.search_action = QAction('&Поиск вакансий из запроса', self)
         self.search_action.triggered.connect(self.set_main_search_widget)
@@ -46,10 +52,10 @@ class MainWindow(QMainWindow):
         self.file_menu_4.addAction(self.about_action)
         #Status Bar
         self.status_bar = self.statusBar()
-        self.status_bar.showMessage('Ready!')
-        #Windows settings        
-        self.setMaximumSize(500,400)
-        self.setMinimumSize(500,400)
+        self.status_bar.showMessage('Готов!')
+        #Windows settings
+        self.setMinimumSize(500, 400)   
+        self.resize(500, 400)
         self.center()
         self.setWindowIcon(QIcon())
         self.setWindowTitle('Программа для парсинга вакансий')
@@ -59,12 +65,19 @@ class MainWindow(QMainWindow):
     def stack_widget(self):
         self.Stack = QStackedWidget(self)
 
-        self.searchWidget = SearchWidget()
-        self.searchFileWidget = SearchFileWidget()
-        self.serverSettingsWidget = ServerSettingsWidget()
-        self.searchSettingsWidget = SearchSettingsWidget()
+        self.searchWidget = SearchWidget(self.status_bar, self.status)
+        self.searchFileWidget = SearchFileWidget(self.status_bar, self.status)
+        self.serverSettingsWidget = ServerSettingsWidget(self.status)
+        self.searchSettingsWidget = SearchSettingsWidget(self.status)
         self.queryWidget = QueryWidget()
         self.infoWidget = InfoWidget()
+
+        self.searchWidget.sig_work.connect(self.set_status)
+        self.searchFileWidget.sig_work.connect(self.set_status)
+        self.sig_status_changed.connect(self.searchWidget.status_changed)
+        self.sig_status_changed.connect(self.searchFileWidget.status_changed)
+        self.sig_status_changed.connect(self.searchSettingsWidget.status_changed)
+        self.sig_status_changed.connect(self.serverSettingsWidget.status_changed)
 
         self.Stack.addWidget(self.searchWidget)
         self.Stack.addWidget(self.searchFileWidget)
@@ -74,24 +87,36 @@ class MainWindow(QMainWindow):
         self.Stack.addWidget(self.infoWidget)
 
         self.setCentralWidget(self.Stack)
-        
+
+    @pyqtSlot(bool)
+    def set_status(self, status: bool):
+        self.status = status
+        self.sig_status_changed.emit(self.status)
+
     def set_main_search_widget(self):
         self.Stack.setCurrentIndex(0)
+        self.resize(500, 400)
 
     def set_main_search_file_widget(self):
         self.Stack.setCurrentIndex(1)
+        self.resize(500, 400)
 
     def set_main_server_settings_widget(self):
         self.Stack.setCurrentIndex(2)
+        self.resize(500, 400)
 
     def set_main_search_settings_widget(self):
         self.Stack.setCurrentIndex(3)
-    
+        self.resize(500, 400)
+
     def set_main_query_widget(self):
         self.Stack.setCurrentIndex(4)
-    
+        self.resize(600, 400)
+
     def set_main_info_widget(self):
         self.Stack.setCurrentIndex(5)
+        self.resize(500, 400)
+
 
     def center(self):
         fr_geo = self.frameGeometry()

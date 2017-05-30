@@ -30,23 +30,26 @@ class Data:
                 self.config_parser.get('Parsing Settings', 'expectations'))
         except:
             print('Ошибка при загрузке config.ini!')
-
-    def write_to_conf(self):
-        try:
-            self.config_parser.set(
-                'DB Settings', 'server_name', self.server_name)
-            self.config_parser.set('DB Settings', 'db_name', self.db_name)
-            self.config_parser.set('DB Settings', 'username', self.username)
-            self.config_parser.set('DB Settings', 'password', self.password)
-            self.config_parser.set('Parsing Settings', 'timeout', str(self.timeout))
-            self.config_parser.set(
+    
+    def write_query_to_conf(self):
+        self.config_parser.set('Parsing Settings', 'timeout', str(self.timeout))
+        self.config_parser.set(
                 'Parsing Settings', 'conditions', self.list_to_string(self.conditions))
-            self.config_parser.set(
+        self.config_parser.set(
                 'Parsing Settings', 'requirments', self.list_to_string(self.requirments))
-            self.config_parser.set(
+        self.config_parser.set(
                 'Parsing Settings', 'expectations', self.list_to_string(self.expectations))
-        except:
-            print('Ошибка при сохранении.')
+        with open('config.ini', 'w', encoding='utf-8') as configfile:
+            self.config_parser.write(configfile) 
+
+    def write_serv_to_conf(self):
+        self.config_parser.set(
+                'DB Settings', 'server_name', self.server_name)
+        self.config_parser.set('DB Settings', 'db_name', self.db_name)
+        self.config_parser.set('DB Settings', 'username', self.username)
+        self.config_parser.set('DB Settings', 'password', self.password)
+        with open('config.ini', 'w', encoding='utf-8') as configfile:
+            self.config_parser.write(configfile)
 
     def string_to_list(self, s):
         temp = s.replace('\n', '')
@@ -60,9 +63,9 @@ class Data:
         s = ''
         for i in range(0, len(l)):
             if i == (len(l) - 1):
-                s = s + l[i] + ';'
-            else:
                 s = s + l[i]
+            else:
+                s = s + l[i] + ';'
         return s
 
     def dbs_to_conf(self, db_name, server_name, username, password):
@@ -73,9 +76,9 @@ class Data:
 
     def ps_to_conf(self, timeout, requirments, conditions, expectations):
         self.timeout = timeout
-        self.requirments = requirments
-        self.conditions = conditions
-        self.expectations = expectations
+        self.requirments = self.string_to_list(requirments)
+        self.conditions = self.string_to_list(conditions)
+        self.expectations = self.string_to_list(expectations)
 
     def rdb_name(self):
         return self.db_name
