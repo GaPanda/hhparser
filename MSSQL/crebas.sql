@@ -5,12 +5,13 @@
 /*===================Создание базы данных========================*/
 use master
 
-create database hh
-use hh
+create database hh1
 
 /*=====================================================================*/
 /*Блок 2*/
 /*====================Создание таблиц базы данных=========================*/
+use hh1
+
 if exists (select 1
    from sys.sysreferences r join sys.sysobjects o on (o.id = r.constid and o.type = 'F')
    where r.fkeyid = object_id('Location') and o.name = 'FK_LOCATION_REFERENCE_CITY')
@@ -537,6 +538,7 @@ go
 
 /*=====================================================================*/
 /*Блок 3*/
+/*В данном блоке процедуры необходимо создавать по очереди!!!*/
 /*======================Процедуры======================*/
 CREATE PROCEDURE VACANCIES 
 @id_query int
@@ -604,7 +606,7 @@ SELECT id_vacancy, name_city, name_metro_station FROM Vacancy, Location, City, M
 WHERE Vacancy.id_location = Location.id_location
 AND Location.id_city = City.id_city
 AND Metro_station.id_metro_station = Location.id_metro_station
-AND Vacancy.id_vacancy = 9278
+AND Vacancy.id_vacancy = @id_vacancy
 END
 
 /*=====================================================================*/
@@ -642,6 +644,7 @@ END
 
 /*=====================================================================*/
 /*Блок 4*/
+/*В данном блоке тригерры необходимо создавать по очереди!!!*/
 /*======================Триггеры======================*/
 
 CREATE TRIGGER INSERT_QUERY 
